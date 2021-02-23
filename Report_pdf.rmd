@@ -1,0 +1,118 @@
+---
+title: "Affinity Visualizations"
+output: 
+  pdf_document:
+    toc: true
+   
+    fig_caption: false
+    fig_crop: false
+classoption: landscape   
+params:
+  aligntable: NA
+  hlatable: NA
+  population: NA
+  report_peptides: NA
+  thresh: NA
+  output_format: NA 
+geometry: margin=1.5cm
+---
+
+```{r setup, cache=FALSE, include=FALSE}
+library(knitr)
+library(DT)
+library(gridExtra)
+library(ggplot2)
+library(ggpubr)
+library(xtable)
+#output <- opts_knit$get("rmarkdown.pandoc.to")
+#if (output=="html") opts_chunk$set(fig.width=11, fig.height=11)
+#if(output=='pdf') opts_chunk$set(fig.width=5, fig.height=7.5)
+```
+
+
+###This Report was generated using the R Shiny App Affinity Visualization on `r format(Sys.Date(), "%B %d, %Y")`.
+
+#Peptides
+
+###It includes an analysis of the folowing peptides:
+####Alignment done using MUSCLE
+
+```{r echo=FALSE,message=FALSE,results='asis'}
+peps<-params$aligntable
+colnames(peps)<-c('Sequence','Aligned Sequence')
+print(xtable(peps),comment=FALSE)
+```
+
+
+
+
+#Plotting Output
+
+
+```{r results='asis',echo=FALSE,message=FALSE,warning=FALSE,fig.width=4.75,fig.height=7.5}
+for (i in params$report_peptides){
+mat<-eval(parse(text=paste0(i,'@affinities_matrix')))
+
+cat('\n\n')
+cat(paste('##Heatmap and Promiscuity Plot for ',i,' with a threshold of ',params$thresh,'% rank.\n\n'))
+cat('\n\n')
+
+hm<-plot_matrix_threshold(mat,params$thresh,'bottom')
+ allele_frequencies<-as.numeric(params$hlatable)/100
+  mat<-matrix(as.numeric(mat),nrow=nrow(mat),byrow=FALSE)
+  mat<-mat<params$thresh
+  mat<-matrix(as.numeric(mat),nrow=nrow(mat),byrow=FALSE)
+  promlines=mat%*%(allele_frequencies)
+axis_title=unlist(strsplit(eval(parse(text=paste0(i,'@sequence'))),''))
+
+
+prom<-plot_single_promiscuity(promlines,FALSE,axis_title[8:(length(axis_title)-7)])
+plot(hm)
+
+plot(prom)
+#plot(grid.arrange(hm,prom,nrow=2,ncol=1))
+}
+
+cat('\n\n')
+
+```
+
+```{r results='asis',echo=FALSE,message=FALSE,warning=FALSE,fig.width=9,fig.height=7.5}
+
+cat('\n\n')
+cat(paste('##Comparison of all peptides with a threshold of ',params$thresh,'% rank.\n\n'))
+cat('\n\n')
+
+peptides_for_multiplot<-params$report_peptides
+  
+  
+  allele_frequencies<-params$hlatable
+  
+  multi_promiscuity_melted<-data.frame('Peptide'=NA,'Position'=NA,'Promiscuity'=NA)
+  
+  for (name in params$report_peptides){
+    
+      if (name != 'Consensus')  {
+        mat<-eval(parse(text=paste0(name,'@affinities_matrix')))
+        mat<-mat<params$thresh
+        mat<-matrix(as.numeric(mat),nrow=nrow(mat),byrow=FALSE)
+        
+        promlines=unlist(mat%*%(allele_frequencies/100))
+        eval(parse(text=paste0(name,'@blanks')))
+        if (eval(parse(text=paste0('max(',name,'@blanks)>0')))){
+          for (i in eval(parse(text=paste0(name,'@blanks')))) {
+            promlines<-append(promlines,NA,after=i-1)
+            }
+          }
+        temp_frame=data.frame('Peptide'=rep(name,(nchar(m_align[1]))),'Position'=1:(nchar(m_align[1])),'Promiscuity'=c(rep(NA,7),promlines[1:(nchar(m_align[1])-14)],rep(NA,7)))
+        multi_promiscuity_melted<-rbind(multi_promiscuity_melted,temp_frame)
+        }
+      }
+    
+  multi_promiscuity_melted<-multi_promiscuity_melted[-is.na(multi_promiscuity_melted$Peptide),]
+  
+opts_chunk$set(fig.width=11.5, fig.height=5)
+plot(plot_multi_promiscuity(multi_promiscuity_melted))
+
+```
+  
