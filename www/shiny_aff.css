@@ -11,8 +11,9 @@ body {
 
 }
 
-.boxed{
-	border: 1px solid black;
+.div .boxed .p{
+	border-color: black;
+       	border-style: solid;
 }
 
 /* Change header text to imported font */
@@ -27,9 +28,14 @@ h2 {
 
 .navbar-header .navbar-brand{
 	color: #353535;
-	/* width: 100%; */
+	 width: 100%; 
 	font-family: 'Yusei Magic', sans-serif;
 	font-size: xx-large;
+}
+
+.navbar-nav{
+	min-width: 800px;
+	clear: left;
 }
 
 .navbar-default {
